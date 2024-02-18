@@ -507,56 +507,89 @@ class MainWindow(QMainWindow, Ui_mainWindow):
     @staticmethod
     def show_image(img_src, label):
         try:
+            # 获取图像的原始尺寸
             ih, iw, _ = img_src.shape
+            # 获取标签的宽度和高度
             w = label.geometry().width()
             h = label.geometry().height()
-            # keep original aspect ratio
+            # 保持原始的宽高比
             if iw/w > ih/h:
+                # 计算缩放比例
                 scal = w / iw
+                # 计算新的宽度和高度
                 nw = w
                 nh = int(scal * ih)
+                # 缩放图像
                 img_src_ = cv2.resize(img_src, (nw, nh))
 
             else:
+                # 计算缩放比例
                 scal = h / ih
+                # 计算新的宽度和高度
                 nw = int(scal * iw)
                 nh = h
+                # 缩放图像
                 img_src_ = cv2.resize(img_src, (nw, nh))
 
+            # 将图像转换为RGB格式
             frame = cv2.cvtColor(img_src_, cv2.COLOR_BGR2RGB)
+            # 创建QImage对象
             img = QImage(frame.data, frame.shape[1], frame.shape[0], frame.shape[2] * frame.shape[1],
                          QImage.Format_RGB888)
+            # 设置标签的图像
             label.setPixmap(QPixmap.fromImage(img))
 
         except Exception as e:
+            # 打印异常信息
             print(repr(e))
+
 
     def show_statistic(self, statistic_dic):
         try:
+            # 清空结果列表
             self.resultWidget.clear()
+            # 对字典按照值进行降序排序
             statistic_dic = sorted(statistic_dic.items(), key=lambda x: x[1], reverse=True)
+            # 去除值为0的项
             statistic_dic = [i for i in statistic_dic if i[1] > 0]
+            # 生成结果列表
             results = [' '+str(i[0]) + '：' + str(i[1]) for i in statistic_dic]
+            # 将结果列表添加到结果列表框中
             self.resultWidget.addItems(results)
 
         except Exception as e:
+            # 打印异常信息
             print(repr(e))
 
+
     def closeEvent(self, event):
+        # 设置线程跳出标志为True
         self.det_thread.jump_out = True
+        # 定义配置文件路径
         config_file = 'config/setting.json'
+        # 创建一个空字典用于存储配置信息
         config = dict()
+        # 将iou滑动条的值保存到配置字典中
         config['iou'] = self.confSpinBox.value()
+        # 将conf滑动条的值保存到配置字典中
         config['conf'] = self.iouSpinBox.value()
+        # 将rate滑动条的值保存到配置字典中
         config['rate'] = self.rateSpinBox.value()
+        # 将checkBox的选中状态保存到配置字典中
         config['check'] = self.checkBox.checkState()
+        # 将saveCheckBox的选中状态保存到配置字典中
         config['savecheck'] = self.saveCheckBox.checkState()
+        # 将配置字典转换为JSON格式字符串
         config_json = json.dumps(config, ensure_ascii=False, indent=2)
+        # 打开配置文件，以utf-8编码方式写入JSON字符串
         with open(config_file, 'w', encoding='utf-8') as f:
             f.write(config_json)
+        # 显示消息框，提示用户正在关闭程序
         MessageBox(
             self.closeButton, title='Tips', text='Closing the program', time=2000, auto=True).exec_()
+        # 退出程序
         sys.exit(0)
+
 
 class MainWindow2(QMainWindow, Ui_mainWindow2):
     def __init__(self, parent=None):
@@ -578,24 +611,40 @@ class MainWindow2(QMainWindow, Ui_mainWindow2):
 
 
     def max_or_restore(self):
+        """
+        根据最大按钮的状态，将窗口最大化或还原
+        """
         if self.maxButton.isChecked():
             self.showMaximized()
         else:
             self.showNormal()
 
+
     def mousePressEvent(self, event):
+        """
+        鼠标按下事件处理函数
+        """
         self.m_Position = event.pos()
         if event.button() == Qt.LeftButton:
             if 0 < self.m_Position.x() < self.groupBox.pos().x() + self.groupBox.width() and \
                     0 < self.m_Position.y() < self.groupBox.pos().y() + self.groupBox.height():
                 self.m_flag = True
 
+
     def mouseMoveEvent(self, QMouseEvent):
+        """
+        鼠标移动事件处理函数
+        """
         if Qt.LeftButton and self.m_flag:
             self.move(QMouseEvent.globalPos() - self.m_Position)
 
+
     def mouseReleaseEvent(self, QMouseEvent):
+        """
+        鼠标释放事件处理函数
+        """
         self.m_flag = False
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
