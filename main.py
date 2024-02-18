@@ -301,22 +301,41 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             self.det_thread.rate_check = False
 
     def chose_rtsp(self):
+        # 创建一个窗口对象
         self.rtsp_window = Window()
+
+        # 定义配置文件路径
         config_file = 'config/ip.json'
+
+        # 如果配置文件不存在，则创建一个新的配置文件
         if not os.path.exists(config_file):
+            # 获取默认的rtsp地址
             ip = "rtsp://admin:admin888@192.168.1.67:555"
+            # 创建一个新的配置文件
             new_config = {"ip": ip}
             new_json = json.dumps(new_config, ensure_ascii=False, indent=2)
             with open(config_file, 'w', encoding='utf-8') as f:
                 f.write(new_json)
         else:
+            # 如果配置文件存在，则读取配置文件中的ip地址
             config = json.load(open(config_file, 'r', encoding='utf-8'))
             ip = config['ip']
+
+        # 将ip地址显示在rtspEdit文本框中
         self.rtsp_window.rtspEdit.setText(ip)
+
+        # 显示rtsp窗口
         self.rtsp_window.show()
+
+        # 当点击rtspButton时，加载rtsp地址
         self.rtsp_window.rtspButton.clicked.connect(lambda: self.load_rtsp(self.rtsp_window.rtspEdit.text()))
 
+
     def load_rtsp(self, ip):
+        """
+        加载rtsp流
+        :param ip: str rtsp流地址
+        """
         try:
             self.stop()
             MessageBox(
@@ -331,12 +350,16 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         except Exception as e:
             self.statistic_msg('%s' % e)
 
+
     def chose_cam(self):
+        """
+        选择相机
+        """
         try:
             self.stop()
             MessageBox(
                 self.closeButton, title='Tips', text='Loading camera', time=2000, auto=True).exec_()
-            # get the number of local cameras
+            # 获取本地相机数量
             _, cams = Camera().get_cam_num()
             popMenu = QMenu()
             popMenu.setFixedWidth(self.cameraButton.width())
@@ -372,7 +395,17 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         except Exception as e:
             self.statistic_msg('%s' % e)
 
+
     def load_setting(self):
+        """
+        加载设置文件并更新界面的值。
+
+        参数：
+        无
+
+        返回：
+        无返回值
+        """
         config_file = 'config/setting.json'
         if not os.path.exists(config_file):
             iou = 0.26
@@ -411,7 +444,18 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.saveCheckBox.setCheckState(savecheck)
         self.is_save()
 
+
     def change_val(self, x, flag):
+        """
+        根据给定的flag和x值，更新相应的滑块或spin box的值，并更新相应的线程参数。
+
+        参数：
+        x：要更新的值
+        flag：更新的类型，可以是'confSpinBox'、'confSlider'、'iouSpinBox'、'iouSlider'、'rateSpinBox'或'rateSlider'
+
+        返回：
+        无返回值
+        """
         if flag == 'confSpinBox':
             self.confSlider.setValue(int(x*100))
         elif flag == 'confSlider':
@@ -430,65 +474,107 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         else:
             pass
 
+
     def statistic_msg(self, msg):
+        # 更新状态信息显示
         self.statistic_label.setText(msg)
-        # self.qtimer.start(3000)
+        # self.qtimer.start(3000)  # 开始计时器，每隔3秒更新状态信息
+
 
     def show_msg(self, msg):
+        # 禁用运行按钮
         self.runButton.setChecked(Qt.Unchecked)
+        # 更新状态信息
         self.statistic_msg(msg)
+        # 如果消息为"Finished"，则启用保存复选框
         if msg == "Finished":
             self.saveCheckBox.setEnabled(True)
 
+
     def change_model(self, x):
+        # 更新模型类型
         self.model_type = self.comboBox.currentText()
+        # 更新检测线程的权重路径
         self.det_thread.weights = "./pt/%s" % self.model_type
+        # 更新状态信息
         self.statistic_msg('Change model to %s' % x)
 
-    def open_file(self):
 
+    def open_file(self):
+        # 定义配置文件路径
         config_file = 'config/fold.json'
-        # config = json.load(open(config_file, 'r', encoding='utf-8'))
+        # 读取配置文件
         config = json.load(open(config_file, 'r', encoding='utf-8'))
+        # 获取打开文件夹路径
         open_fold = config['open_fold']
+        # 如果打开文件夹路径不存在，则使用当前工作路径
         if not os.path.exists(open_fold):
             open_fold = os.getcwd()
+        # 弹出文件对话框，获取文件路径
         name, _ = QFileDialog.getOpenFileName(self, 'Video/image', open_fold, "Pic File(*.mp4 *.mkv *.avi *.flv "
                                                                           "*.jpg *.png)")
+        # 如果选择了文件
         if name:
+            # 设置检测线程的源文件路径
             self.det_thread.source = name
+            # 更新状态信息
             self.statistic_msg('Loaded file：{}'.format(os.path.basename(name)))
+            # 更新打开文件夹路径
             config['open_fold'] = os.path.dirname(name)
+            # 将配置文件转换为字符串
             config_json = json.dumps(config, ensure_ascii=False, indent=2)
+            # 将配置文件写入磁盘
             with open(config_file, 'w', encoding='utf-8') as f:
                 f.write(config_json)
+            # 停止线程
             self.stop()
 
+
     def max_or_restore(self):
+        # 如果最大化按钮被选中
         if self.maxButton.isChecked():
+            # 将窗口最大化
             self.showMaximized()
         else:
+            # 将窗口恢复为正常大小
             self.showNormal()
 
+
     def run_or_continue(self):
+        # 设置跳转标志为False
         self.det_thread.jump_out = False
+        # 如果运行按钮被选中
         if self.runButton.isChecked():
+            # 禁用保存复选框
             self.saveCheckBox.setEnabled(False)
+            # 设置检测线程的is_continue属性为True
             self.det_thread.is_continue = True
+            # 如果检测线程未在运行中
             if not self.det_thread.isRunning():
+                # 启动检测线程
                 self.det_thread.start()
+            # 获取源文件名
             source = os.path.basename(self.det_thread.source)
+            # 如果源文件名是数字，则将source设为'camera'，否则保持不变
             source = 'camera' if source.isnumeric() else source
+            # 输出检测信息
             self.statistic_msg('Detecting >> model：{}，file：{}'.
                                format(os.path.basename(self.det_thread.weights),
                                       source))
         else:
+            # 设置检测线程的is_continue属性为False
             self.det_thread.is_continue = False
+            # 输出暂停信息
             self.statistic_msg('Pause')
 
+
     def stop(self):
-        self.det_thread.jump_out = True
-        self.saveCheckBox.setEnabled(True)
+        """
+        停止检测线程
+        """
+        self.det_thread.jump_out = True  # 设置jump_out标志为True，表示要停止线程
+        self.saveCheckBox.setEnabled(True)  # 启用保存复选框
+
 
     def mousePressEvent(self, event):
         self.m_Position = event.pos()
